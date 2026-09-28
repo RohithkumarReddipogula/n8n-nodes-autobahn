@@ -1,0 +1,25 @@
+{
+	"node": "n8n-nodes-autobahn.autobahn",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Data & Storage",
+		"Miscellaneous"
+	],
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/RohithkumarReddipogula/n8n-nodes-autobahn?tab=readme-ov-file"
+			}
+		]
+	},
+	"alias": [
+		"traffic",
+		"roadworks",
+		"stau",
+		"baustelle",
+		"highway",
+		"germany"
+	],
+	"subcategories": {}
+}

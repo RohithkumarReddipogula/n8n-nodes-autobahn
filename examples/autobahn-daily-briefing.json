@@ -1,0 +1,233 @@
+{
+  "name": "Autobahn AI morning briefing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "1b06d4aa-2956-4263-8485-4d97892723c4",
+      "name": "Every weekday 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "eventType": "roadworks",
+        "roads": "A100, A111, A113, A10",
+        "returnAll": true,
+        "simplify": true,
+        "options": {
+          "onlyBlocked": true
+        }
+      },
+      "id": "be3e8671-b35e-4991-8df3-9bb4e205dd81",
+      "name": "Blocked roadworks",
+      "type": "n8n-nodes-autobahn.autobahn",
+      "typeVersion": 1,
+      "position": [
+        260,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "getAll",
+        "eventType": "closure",
+        "roads": "A100, A111, A113, A10",
+        "returnAll": true,
+        "simplify": true,
+        "options": {}
+      },
+      "id": "3a01a04b-0c31-41e8-bc78-b9257b0c2059",
+      "name": "Closures",
+      "type": "n8n-nodes-autobahn.autobahn",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "id": "9882bc65-623f-4eb1-96ae-e76b5a3c1428",
+      "name": "Combine events",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        520,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "events",
+        "options": {}
+      },
+      "id": "8a445b14-6813-47bf-a82a-bd53c7a56726",
+      "name": "Collect into one list",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        740,
+        200
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You write a short morning traffic briefing for commuters around Berlin.\n\nHere are today's blocked roadworks and closures from the official Autobahn API as JSON:\n{{ JSON.stringify(($json.events ?? []).filter(e => e.id)) }}\n\nRules:\n- Start with one sentence saying how bad the morning looks overall.\n- Then list at most 5 events that matter most, one line each: road, section, what is happening, until when if known.\n- If the list is empty, say there are no blocked roadworks or closures right now.\n- Plain English, no emojis, under 150 words.",
+        "hasOutputParser": false
+      },
+      "id": "4a752d25-5489-4fb4-9a0f-8f19934fb784",
+      "name": "Write briefing",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        960,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "b3868e2b-c23a-43ad-b82b-1bcea70f40af",
+      "name": "Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        960,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "rohithkumar336699@gmail.com",
+        "subject": "=Autobahn briefing {{ $now.toFormat('dd.MM.yyyy') }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "2c6eaea6-5dd8-4156-adef-2feb61b453a5",
+      "name": "Send briefing",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1220,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Every weekday 07:00": {
+      "main": [
+        [
+          {
+            "node": "Blocked roadworks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Closures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blocked roadworks": {
+      "main": [
+        [
+          {
+            "node": "Combine events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Closures": {
+      "main": [
+        [
+          {
+            "node": "Combine events",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine events": {
+      "main": [
+        [
+          {
+            "node": "Collect into one list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect into one list": {
+      "main": [
+        [
+          {
+            "node": "Write briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write briefing": {
+      "main": [
+        [
+          {
+            "node": "Send briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Write briefing",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
